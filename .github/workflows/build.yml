@@ -1,0 +1,39 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: 0 1 * * 1
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.zig-version }} | ${{ matrix.os }} | ${{ matrix.zig-opt }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        zig-version: [latest, master]
+        zig-opt: [Debug, ReleaseSafe, ReleaseFast]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Zig Toolchain
+        uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ matrix.zig-version }}
+
+      - name: Show System Info
+        run: |
+          zig version
+          zig env
+
+      - name: Build
+        run: zig build -Doptimize=${{ matrix.zig-opt }} --verbose
+
+      - name: Run Tests
+        run: zig build test -Doptimize=${{ matrix.zig-opt }} --summary all
